@@ -1,50 +1,50 @@
 <?php
 
-// header("Content-Type:application/json");
-// session_start();
-function bidii_pay_process_payment(){
-     if($_POST['payment_method'] != 'bidii_pay_mpesa')
+function bidii_pay_process_payment($order){
+     if($_POST['payment_method'] != 'bidii_pay_mpesa'){
         return;
+     }
 
-    if( !isset($_POST['mobile']) || empty($_POST['mobile']) )
-        wc_add_notice( __( 'Please add your mobile number', $this->domain ), 'error' );
-
-
-    $config = array(
-        "env"              => "sandbox",
-        "BusinessShortCode"=> "174379",
-        "key"              => "", //Enter your consumer key here
-        "secret"           => "", //Enter your consumer secret here
-        "username"         => "apitest",
-        "TransactionType"  => "CustomerPayBillOnline",
-        "passkey"          => "", //Enter your passkey here
-        "CallBackURL"     => "http://localhost/wordpress/wc-api/response/",
-        "AccountReference" => "CompanyXLTD",
-        "TransactionDesc"  => "Payment of X" ,
-    );
-
-    $mobile = $order['mobile'];
-    $amount = $order['amount'];
+    if( !isset($_POST['mobile']) || empty($_POST['mobile']) ){
+        wc_add_notice( __( 'Please add your mobile number', 'bidii_pay' ), 'error' );
+    }
+    $amount = '1';
+    $mobile = '0713749580';
 
     $mobile = (substr($mobile, 0, 1) == "+") ? str_replace("+", "", $mobile) : $mobile;
     $mobile = (substr($mobile, 0, 1) == "0") ? preg_replace("/^0/", "254", $mobile) : $mobile;
     $mobile = (substr($mobile, 0, 1) == "7") ? "254{$mobile}" : $mobile;
 
+    $config = array(
+        "env"              => "sandbox",
+        "BusinessShortCode"=> "174379",
+        "key"              => "6fSidiQK1v1f9sJG9m8Tzbs3SVTPgYfW", //Enter your consumer key here
+        "secret"           => "3hosoK1vkgnXv80u", //Enter your consumer secret here
+        "username"         => "testapi",
+        "TransactionType"  => "CustomerPayBillOnline",
+        "passkey"          => "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919", 
+        "CallBackURL"     => "https://charityfarm.co.ke/wp-json/bidii-pay/v1/receive-callback/",
+        "AccountReference" => "CompanyXLTD",
+        "TransactionDesc"  => "Payment of X" ,
+    );
     $access_token = ($config['env']  == "live") ? "https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials" : "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"; 
+
     $credentials = base64_encode($config['key'] . ':' . $config['secret']); 
-    
+
     $ch = curl_init($access_token);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Basic " . $credentials]);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1); 
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Basic '.$credentials]);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     $response = curl_exec($ch);
     curl_close($ch);
-    $result = json_decode($response); 
-    $token = isset($result->{'access_token'}) ? $result->{'access_token'} : "N/A";
-
+    $json_response = json_decode($response);
+    // echo $response;
+    $token = isset( $json_response -> access_token) ?  $json_response -> access_token  : '';
     $timestamp = date("YmdHis");
     $password  = base64_encode($config['BusinessShortCode'] . "" . $config['passkey'] ."". $timestamp);
 
-    $curl_post_data = array( 
+
+    //Start structuring call to express api
+    $request_data = json_encode(array( 
         "BusinessShortCode" => $config['BusinessShortCode'],
         "Password" => $password,
         "Timestamp" => $timestamp,
@@ -55,35 +55,25 @@ function bidii_pay_process_payment(){
         "PhoneNumber" => $mobile,
         "CallBackURL" => $config['CallBackURL'],
         "AccountReference" => $config['AccountReference'],
-        "TransactionDesc" => $config['TransactionDesc'],
-    ); 
-
-    $data_string = json_encode($curl_post_data);
+        "TransactionDesc" => $config['TransactionDesc']
+    )); 
 
     $endpoint = ($config['env'] == "live") ? "https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest" : "https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest"; 
-
-    $ch = curl_init($endpoint );
+    
+    $ch = curl_init($endpoint);
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
         'Authorization: Bearer '.$token,
         'Content-Type: application/json'
     ]);
     curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $data_string);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $request_data);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    $response     = curl_exec($ch);
+    $mpesa_response     = curl_exec($ch);
     curl_close($ch);
-
-    $result = json_decode($response); 
+    echo $mpesa_response;
+    $mpesa_json = json_decode($mpesa_response);
     
-    $stkpushed = $result->{'ResponseCode'};
-
-
-    if($stkpushed === "0"){
-        echo $result->{'ResponseDescription'};
-        // header("Location: confirmation-payment.php");
-        return true;
-    } else {
-        echo $result->{'errorMessage'};
-        return false;
-    }
 }
+
+add_action('woocommerce_checkout_process', 'bidii_pay_process_payment');
+

@@ -76,12 +76,15 @@ function bidii_pay_receive_callback($request){
 
     $table = $wpdb->prefix . 'mpesa_transactions';
  
-$sql = $wpdb->prepare("INSERT INTO `$table` (`MerchantRequestID`, `CheckoutRequestID`, `ResultCode`, `ResultDesc`, `MpesaCode`, `Amount`, `TransactionDate`, `PhoneNumber`) values (%s, %s, %d, %s, %s, %f, %s, %s)", $MerchantRequestID, $CheckoutRequestID, $ResultCode, $ResultDesc, $MpesaCode, $Amount, $TransactionDate, $PhoneNumber);
+    $sql = $wpdb->prepare("INSERT INTO `$table` (`MerchantRequestID`, `CheckoutRequestID`, `ResultCode`, `ResultDesc`, `MpesaCode`, `Amount`, `TransactionDate`, `PhoneNumber`) values (%s, %s, %d, %s, %s, %f, %s, %s)", $MerchantRequestID, $CheckoutRequestID, $ResultCode, $ResultDesc, $MpesaCode, $Amount, $TransactionDate, $PhoneNumber);
 
-$wpdb->query($sql);
+    $wpdb->query($sql);
 
     $data['status'] = 'OK';
     $data['message'] = 'Reached callback url';
     return $data;
     //store m-pesa data in a custom table 
 }
+
+include('bidii-pay-custom-gateway.php');
+

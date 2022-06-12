@@ -1,5 +1,6 @@
 <?php
-header("Content-Type:application/json");
+
+function bidii_pay_check_transaction(){
 
 /*Call function with these configurations*/
     $env="sandbox";
@@ -89,3 +90,5 @@ header("Content-Type:application/json");
     }else{
         echo "Transaction doesnt exist";
     }
+        
+}
