@@ -1,27 +1,42 @@
 <?php
 
-function bidii_pay_check_transaction(){
+function bidii_pay_check_transaction($fields, $entry, $form_data){
+
+
+    //  if ( absint( $form_data[ 'id' ] ) !== 2014 ) {
+    //     return $fields;
+    // }
+    // check the field ID 4 to see if it's empty and if it is, run the error    
+    if(empty( $fields[1][ 'value' ]) ) {
+            // Add to global errors. This will stop form entry from being saved to the database.
+            // Uncomment the line below if you need to display the error above the form.
+            // wpforms()->process->errors[ $form_data[ 'id' ] ][ 'header' ] = esc_html__( 'Some error occurred.', 'bidii_pay' );    
+  
+            // Check the field ID 4 and show error message at the top of form and under the specific field
+               wpforms()->process->errors[ $form_data[ 'id' ] ] [ '1' ] = esc_html__( 'Some error occurred.', 'bidii_pay' );
+                exit();
+
+  
+          // Add additional logic (what to do if error is not displayed)
+    }
+
+
 
 /*Call function with these configurations*/
     $env="sandbox";
-    $type = 4;
-    $shortcode = '600988'; 
-    $key = ""; //Put your key here
-    $secret = "";  //Put your secret here
+    $type = 2;
+    $shortcode = '600996'; 
+    $key     = "6fSidiQK1v1f9sJG9m8Tzbs3SVTPgYfW";//Enter your consumer key here
+    $secret= "3hosoK1vkgnXv80u"; //Enter your consumer secret here
     $initiatorName = "testapi";
-    $initiatorPassword = "Safaricom978!";
-    $results_url = "https://mydomain.com/TransactionStatus/result/"; //Endpoint to receive results Body
-    $timeout_url = "https://mydomain.com/TransactionStatus/queue/"; //Endpoint to to go to on timeout
+    $initiatorPassword = "Safaricom999!*!";
+    $results_url = "https://charityfarm.co.ke/wp-json/bidii-pay/v1/result/"; //Endpoint to receive results Body
+    $timeout_url = "https://charityfarm.co.ke/wp-json/bidii-pay/v1/queue/"; //Endpoint to to go to on timeout
 /*End  configurations*/
 
-/*Ensure transaction code is entered*/
-    if (!isset($_GET["transactionID"])) {
-        echo "Technical error";
-        exit();
-    }
 /*End transaction code validation*/
 
-    $transactionID = $_GET["transactionID"]; 
+    $transactionID = $form_data['id'][1]; 
     //$transactionID = "OEI2AK4Q16";
     $command = "TransactionStatusQuery";
     $remarks = "Transaction Status Query"; 
@@ -40,7 +55,7 @@ function bidii_pay_check_transaction(){
     
     $result = json_decode($response); 
 
-    //echo $result->{'access_token'};
+    // echo $result->{'access_token'};
     
     $token = isset($result->{'access_token'}) ? $result->{'access_token'} : "N/A";
 
@@ -50,17 +65,30 @@ function bidii_pay_check_transaction(){
 
     //echo $token;
 
+
     $curl_post_data = array( 
-        "Initiator" => $initiatorName, 
-        "SecurityCredential" => $password, 
-        "CommandID" => $command, 
-        "TransactionID" => $transactionID, 
-        "PartyA" => $shortcode, 
-        "IdentifierType" => $type, 
-        "ResultURL" => $results_url, 
-        "QueueTimeOutURL" => $timeout_url, 
-        "Remarks" => $remarks, 
-        "Occasion" => $occasion,
+        
+    "Initiator" => "testapi",
+    "SecurityCredential" => "P3N+gjF0LcMAr0HHhxFj5A0K/9/ARruktvA2WWJ6CNIHcaNBQDJ2CitI1ZchJXrcy5UnHrf8cPhhfXgX1Thn4SEGT80FdJfIWD1aO5arfVIqj+UNYlvfWWNGk6g5FSSyKiRCypdyOOoWeklvCpYWflNMWsqIlDGPGZQ14k7h82eTfj8uT8ys+4QuF8od3J1nzIu3Cot0l/1nV39ln8mgzMGmB0AJKOTalBWyBJ+9dl3AFUIk9eIe03dRRw1E7hZBZxlzSD5wJqKCOf1CRqirwK9cqrvHdW1QhTrXaMjtiB65YhSgGO91NNxFt+4l51AVHQIYoLTUXcp022jziCcYKg==",
+    "CommandID" => "TransactionStatusQuery",
+    "TransactionID" => "OEI2AK4Q16",
+    "PartyA" => "600996",
+    "IdentifierType" => "4",
+    "ResultURL" => "https://mydomain.com/TransactionStatus/result/",
+    "QueueTimeOutURL" => "https://mydomain.com/TransactionStatus/queue/",
+    "Remarks" => "cinnMan",
+    "Occassion" => "",
+  
+        // "Initiator" => $initiatorName, 
+        // "SecurityCredential" => $password, 
+        // "CommandID" => $command, 
+        // "TransactionID" => $transactionID, 
+        // "PartyA" => $shortcode, 
+        // "IdentifierType" => $type, 
+        // "ResultURL" => $results_url, 
+        // "QueueTimeOutURL" => $timeout_url, 
+        // "Remarks" => $remarks, 
+        // "Occasion" => $occasion,
     ); 
 
     $data_string = json_encode($curl_post_data);
@@ -80,15 +108,18 @@ function bidii_pay_check_transaction(){
     $response     = curl_exec($ch2);
     curl_close($ch2);
 
-    //echo "Authorization: ". $response;
+    echo $response;
 
     $result = json_decode($response); 
     
-    $verified = $result->{'ResponseCode'};
+    $verified = $result -> {'ResponseCode'};
     if($verified === "0"){
-        echo "Transaction verified as TRUE";
+        echo $verified;
+        //make some changes to !!!the order!!!?
     }else{
-        echo "Transaction doesnt exist";
+        echo $result -> {'errorMessage'};
     }
         
 }
+
+add_filter( 'wpforms_process', 'bidii_pay_check_transaction', 10, 3 );

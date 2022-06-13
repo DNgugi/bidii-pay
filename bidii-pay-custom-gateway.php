@@ -133,21 +133,24 @@ function init_custom_gateway_class(){
          */
         public function process_payment( $order_id ) {
 
-            $order = wc_get_order( $order_id );
-                    //make a call to process-payment
-            $accepted = bidii_pay_process_payment($order);
-            if($accepted){
-                // $paid = bidii_pay_check_transaction();
-                $order->payment_complete();
-            } else {
-                wc_add_notice(__('Some payment error occured, try again'),'error');
-                return;
+$order = wc_get_order( $order_id );
+            $amount = $order -> get_total();
+            if( $amount > 0){
+                //action to stop the flow, mark the order as pending-payment, push to customer, then exit so that
+                bidii_pay_process_payment($order_id);
+
+                //woocommerce process_payment redirect to the 'confirm-payment' page which
+
+                //will call the check transaction, and call order -> payment_complete to clear the cart and mark the order paid for etc...
+
+                    return array(
+                        'result'    => 'success',
+                        'redirect'  => site_url().'/confirm-payment/'  
+                    );
             }
+            
             // Return thankyou redirect
-            return array(
-                'result'    => 'success',
-                'redirect'  => $this->get_return_url( $order )
-            );
+            return;
         }
     }
 }
